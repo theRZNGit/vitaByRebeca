@@ -113,12 +113,12 @@ export async function POST(req: NextRequest) {
         ...product,
         images,
         sizes: Array.isArray(product.sizes)
-          ? product.sizes.map((s: any) =>
-              typeof s === "string"
-                ? { label: s, price: product.originalPrice || 0 } // fallback for older formats
-                : { label: s.label, price: s.price }
-            )
-          : [], // fallback if undefined
+        ? product.sizes.map((s: string | { label: string; price: number }) =>
+            typeof s === "string"
+              ? { label: s, price: product.originalPrice || 0 }
+              : { label: s.label, price: s.price }
+          )
+        : [],
       };      
 
       // ✅ Add new product to list
