@@ -257,11 +257,11 @@ const AdminPage = () => {
   };
 
   // Update images in a safer way, preserving existing ones if not replaced
-const handleProductChange = (
-  id: number,
-  field: "name" | "description" | "secondaryDescription" | "category" | "sizes" | "images",
-  value: string | string[]
-) => {
+  const handleProductChange = (
+    id: number,
+    field: "name" | "description" | "secondaryDescription" | "category" | "sizes" | "images",
+    value: string | string[] | { label: string; price: number }[]
+  ) => {
   console.log(`🔄 Updating product ${id}, field: ${field}, value:`, value); // ✅ Log updates
   setProductData((prevData) =>
     prevData.map((product) =>
@@ -477,30 +477,50 @@ const handleSaveChanges = async () => {
 
 
               {/* Editable Sizes */}
-              <div className="mt-2">
-                <label className="text-black font-medium">Tamaños:</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {["Pequeño", "Mediano", "Grande", "Extra Grande"].map((size) => (
-                    <button
-                      key={size}
-                      className={`w-10 h-10 flex items-center justify-center border rounded-full ${
-                        product.sizes?.includes(size) ? "bg-black text-white" : "bg-gray-200 text-black"
-                      }`}
-                      onClick={() =>
-                        handleProductChange(
-                          product.id,
-                          "sizes",
-                          product.sizes?.includes(size)
-                            ? product.sizes.filter((s) => s !== size) // Remove size if selected
-                            : [...(product.sizes || []), size] // Add size if not selected
-                        )
-                      }
-                    >
-                      {size.charAt(0)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <div className="mt-4">
+  <label className="text-black font-medium">Tamaños y Precios:</label>
+  <div className="flex flex-col gap-2 mt-2">
+    {["Pequeño", "Mediano", "Grande", "Extra Grande"].map((sizeLabel) => {
+      const existing = product.sizes?.find((s) => s.label === sizeLabel);
+      const isSelected = !!existing;
+
+      return (
+        <div key={sizeLabel} className="flex items-center gap-2">
+          <button
+            className={`px-3 py-1 rounded-full text-sm ${
+              isSelected ? "bg-black text-white" : "bg-gray-300 text-black"
+            }`}
+            onClick={() => {
+              const updatedSizes = isSelected
+                ? product.sizes?.filter((s) => s.label !== sizeLabel)
+                : [...(product.sizes || []), { label: sizeLabel, price: 0 }];
+
+              handleProductChange(product.id, "sizes", updatedSizes || []);
+            }}
+          >
+            {isSelected ? "✓" : "+"} {sizeLabel}
+          </button>
+
+          {isSelected && (
+            <input
+              type="number"
+              value={existing.price}
+              onChange={(e) => {
+                const updatedSizes = product.sizes?.map((s) =>
+                  s.label === sizeLabel ? { ...s, price: parseFloat(e.target.value) || 0 } : s
+                );
+                handleProductChange(product.id, "sizes", updatedSizes || []);
+              }}
+              placeholder="Precio"
+              className="w-24 p-1 border border-gray-500 rounded text-black"
+            />
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
+
 
 
               {/* ✅ Editable Category */}

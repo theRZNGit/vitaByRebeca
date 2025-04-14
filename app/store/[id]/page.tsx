@@ -19,16 +19,17 @@ interface Product {
   name: string;
   description: string;
   secondaryDescription?: string;
-  images: string[]; 
+  images: string[];
   originalPrice: number;
   discount: string;
   price: number;
-  sizes?: string[];
+  sizes?: { label: string; price: number }[]; // ✅ updated
 }
 
 interface CartItem extends Product {
   quantity: number;
   selectedSize?: string;
+  price: number; // ✅ add this to ensure correct pricing at checkout
 }
 
 export default function ProductPage() {
@@ -77,20 +78,23 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-
+  
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
       alert("Por favor, selecciona un tamaño antes de añadir al carrito.");
       return;
     }
-
+  
+    const selectedSizePrice = product.sizes?.find((s) => s.label === selectedSize)?.price;
+  
     const cartItem: CartItem = {
       ...product,
       quantity,
-      selectedSize: product.sizes && product.sizes.length > 0 ? selectedSize : undefined,
+      selectedSize: selectedSize || undefined,
+      price: selectedSizePrice ?? product.price, // ✅ this ensures the correct price is passed to cart
     };
-
+  
     addToCart(cartItem);
-  };
+  };  
 
   if (loading) {
     return <p className="text-center text-gray-500">Cargando producto...</p>;
@@ -173,7 +177,10 @@ export default function ProductPage() {
               </p>
             )}
             <p className="text-3xl font-semibold text-primary">
-              ${product.price.toFixed(2)}
+              ${(
+                product.sizes?.find((s) => s.label === selectedSize)?.price ??
+                product.price
+              ).toFixed(2)}
             </p>
           </div>
 
@@ -188,7 +195,9 @@ export default function ProductPage() {
               >
                 <option value="">Selecciona un tamaño</option>
                 {product.sizes.map((size) => (
-                  <option key={size} value={size}>{size}</option>
+                  <option key={size.label} value={size.label}>
+                    {size.label} - ${size.price.toFixed(2)}
+                  </option>
                 ))}
               </select>
             </div>

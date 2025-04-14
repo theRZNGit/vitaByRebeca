@@ -11,7 +11,7 @@ export interface Product {
   originalPrice: number;
   discount: string;
   price: number;
-  sizes?: string[];
+  sizes?: { label: string; price: number }[];
 }
 
 

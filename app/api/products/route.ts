@@ -111,8 +111,15 @@ export async function POST(req: NextRequest) {
 
       const newProduct: Product = {
         ...product,
-        images, // ✅ Properly include images in product
-      };
+        images,
+        sizes: Array.isArray(product.sizes)
+          ? product.sizes.map((s: any) =>
+              typeof s === "string"
+                ? { label: s, price: product.originalPrice || 0 } // fallback for older formats
+                : { label: s.label, price: s.price }
+            )
+          : [], // fallback if undefined
+      };      
 
       // ✅ Add new product to list
       products.push(newProduct);
