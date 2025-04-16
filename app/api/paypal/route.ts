@@ -49,21 +49,40 @@ export async function POST(req: Request) {
 /**
  * Capture PayPal Payment (Step 2)
  */
+
 export async function PUT(req: Request) {
   try {
-    const { orderID } = await req.json();
+    const body = await req.json();
+    console.log("📦 Received PUT body:", body);
+
+    const orderID = body.orderID || body.orderId || "";
+
+    if (!orderID) {
+      console.warn("⚠️ No order ID provided in request body.");
+      return NextResponse.json({ error: "Expected an order id to be passed" }, { status: 400 });
+    }
 
     const request = new paypal.orders.OrdersCaptureRequest(orderID);
     request.requestBody({});
 
     const capture = await client.execute(request);
 
-    return NextResponse.json({ status: capture.result.status, details: capture.result });
+    console.log("✅ Order captured:", {
+      id: capture.result.id,
+      status: capture.result.status,
+      debug_id: capture.headers.get("PayPal-Debug-Id"),
+    });
+
+    return NextResponse.json({
+      status: capture.result.status,
+      details: capture.result,
+    });
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error("Error capturing order:", error.message);
+      console.error("❌ Error capturing order:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ error: "An unknown error occurred" }, { status: 500 });
   }
 }
+

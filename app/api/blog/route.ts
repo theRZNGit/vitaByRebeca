@@ -35,25 +35,31 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    // ✅ Handle file upload with multipart/form-data
     if (req.headers.get("content-type")?.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       const articleData = formData.get("article") as string | null;
+
+      // ✅ Allow file-only uploads (image preview step)
+      if (!articleData && file) {
+        const fileName = `blog-images/${Date.now()}-${file.name}`;
+        const { url } = await put(fileName, file, { access: "public" });
+        return NextResponse.json({ url }, { status: 200 });
+      }
+
+      // 👇 This part stays the same
       if (!articleData) {
         return NextResponse.json({ error: "Missing article data" }, { status: 400 });
       }
 
       const newArticle: BlogArticle = JSON.parse(articleData);
 
-      // ✅ Upload the file only if it exists
       if (file) {
         const fileName = `blog-images/${Date.now()}-${Math.random().toString(36).substring(7)}`;
         const { url } = await put(fileName, file, { access: "public" });
         newArticle.image = url;
       }
 
-      // ✅ Fetch existing articles
       const articlesData = await redis.get("blog:articles");
       let articles: BlogArticle[] = [];
 
@@ -63,11 +69,33 @@ export async function POST(req: NextRequest) {
         articles = articlesData as BlogArticle[];
       }
 
-      // ✅ Add the new article
       articles.push(newArticle);
       await redis.set("blog:articles", JSON.stringify(articles));
 
       return NextResponse.json({ message: "Article added successfully", article: newArticle }, { status: 201 });
+    }
+
+    // Fallback for plain JSON posts (blog with no image)
+    if (req.headers.get("content-type")?.includes("application/json")) {
+      const article = await req.json();
+
+      if (!article || !article.title || !article.content || !article.date || !article.id) {
+        return NextResponse.json({ error: "Missing required article fields" }, { status: 400 });
+      }
+
+      const articlesData = await redis.get("blog:articles");
+      let articles: BlogArticle[] = [];
+
+      if (typeof articlesData === "string") {
+        articles = JSON.parse(articlesData);
+      } else if (Array.isArray(articlesData)) {
+        articles = articlesData as BlogArticle[];
+      }
+
+      articles.push(article);
+      await redis.set("blog:articles", JSON.stringify(articles));
+
+      return NextResponse.json({ message: "Article added successfully", article }, { status: 201 });
     }
 
     return NextResponse.json({ error: "Invalid request format" }, { status: 400 });

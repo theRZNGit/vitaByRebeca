@@ -35,7 +35,7 @@ const ImageUpload = ({ onUpload, currentImage, type = "product" }: ImageUploadPr
     formData.append("file", file);
 
     try {
-      const endpoint = type === "product" ? "/api/products" : "/api/blog-upload";
+      const endpoint = "/api/blog"; // 👈 Blog image uploads should go to /api/blog directly
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
