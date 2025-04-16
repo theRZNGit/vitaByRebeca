@@ -10,7 +10,6 @@ declare global {
         createOrder: () => Promise<string>;
         onApprove: (
           data: { orderID?: string; orderId?: string },
-          actions: any
         ) => Promise<void>;
         onError: (err: Error) => void;
       }) => {
@@ -63,7 +62,6 @@ export default function PayPalButton({ total, cartItems }: PayPalButtonProps) {
 
           onApprove: async (
             data: { orderID?: string; orderId?: string },
-            actions: any
           ): Promise<void> => {
             const orderID = data.orderID || data.orderId;
 
